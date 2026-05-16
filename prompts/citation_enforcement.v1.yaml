@@ -1,0 +1,14 @@
+name: citation_enforcement
+version: v1
+template: |
+  Verify whether the answer is fully supported by the cited context chunks.
+  Return only one word: supported or unsupported.
+
+  Question:
+  {question}
+
+  Answer:
+  {answer}
+
+  Context:
+  {context}

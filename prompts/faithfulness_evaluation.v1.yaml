@@ -1,0 +1,5 @@
+name: faithfulness_evaluation
+version: v1
+template: |
+  Judge whether each factual claim in the answer is supported by the retrieved contexts.
+  Penalize unsupported, contradicted, or uncited claims.
