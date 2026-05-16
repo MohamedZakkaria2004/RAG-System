@@ -4,6 +4,20 @@ A production-style Retrieval-Augmented Generation system for asking questions ov
 
 The system ingests PDFs, Markdown, text, HTML files, and web pages; chunks them into overlapping token windows; stores embeddings in Chroma; retrieves relevant context with hybrid semantic + keyword search; reranks results with a local cross-encoder; and generates answers with citations using Gemini or OpenAI.
 
+## System Preview
+
+### RAG Architecture
+
+The diagram below shows the end-to-end architecture: documents are loaded, chunked, embedded, stored in Chroma, retrieved with hybrid search, reranked, passed to the LLM, and returned with citations.
+
+![RAG System Architecture](docs/assets/rag-system-architecture.png)
+
+### Running API
+
+The FastAPI service exposes interactive Swagger documentation for ingestion, querying, health checks, and evaluation.
+
+![Production RAG System API Docs](docs/assets/rag-system-api-docs.png)
+
 ## Features
 
 - Document ingestion for local files and web pages
@@ -19,10 +33,59 @@ The system ingests PDFs, Markdown, text, HTML files, and web pages; chunks them 
 - RAGAS evaluation support
 - GitHub Actions CI
 
+## How The System Works
+
+This project has two main flows: an ingestion pipeline and a query pipeline.
+
+### 1. Ingestion Pipeline
+
+The ingestion pipeline prepares private documents for retrieval.
+
+1. Documents are loaded from `data/raw`, a single file path, or a web URL.
+2. Supported document types include PDF, TXT, Markdown, HTML, and web pages.
+3. The loader normalizes every source into a shared document format with source metadata.
+4. The chunker splits text into token-aware chunks, using a default chunk size of 700 tokens and 100 tokens of overlap.
+5. Each chunk receives a stable chunk ID and metadata such as source path, page number, title, and chunk index.
+6. The embedding provider creates vector embeddings for every chunk using Gemini or OpenAI.
+7. Chunks and metadata are stored in ChromaDB so answers can later cite the exact source.
+
+### 2. Query Pipeline
+
+The query pipeline answers user questions using only indexed documents.
+
+1. A user submits a question through the CLI or FastAPI.
+2. Chroma vector search retrieves semantically similar chunks.
+3. BM25 keyword search retrieves chunks that match exact terms or phrases.
+4. Reciprocal rank fusion combines semantic and keyword retrieval results.
+5. A local sentence-transformers cross-encoder reranks the retrieved chunks for higher precision.
+6. The top-ranked chunks are formatted as context and sent to the configured LLM.
+7. The LLM generates an answer using only the retrieved context.
+8. The answer must include chunk citations such as `[chunk_id]`.
+9. If the answer has no valid supporting citations, the system refuses instead of guessing.
+10. The final response includes the answer, citations, source excerpts, retrieved chunks, and support status.
+
+### 3. Evaluation Pipeline
+
+The evaluation pipeline is designed for measuring RAG quality.
+
+1. A manually verified golden QA dataset is stored as JSONL.
+2. `rag eval` runs questions through the RAG pipeline.
+3. RAGAS measures faithfulness, answer relevancy, context precision, and context recall.
+4. GitHub Actions can fail CI if the faithfulness score drops below the configured threshold.
+
+### 4. Provider Support
+
+The system supports both Gemini and OpenAI.
+
+- Gemini uses `GOOGLE_API_KEY`, `gemini_chat_model`, and `gemini_embedding_model`.
+- OpenAI uses `OPENAI_API_KEY`, `chat_model`, and `embedding_model`.
+- If you switch embedding providers or embedding models, delete `data/chroma` and ingest again because vector dimensions can differ.
+
 ## Project Structure
 
 ```text
 .
+|-- docs/assets/                     # README images and project visuals
 |-- config/default.yaml              # Runtime configuration
 |-- data/
 |   `-- eval/golden_qa.example.jsonl # Example evaluation dataset schema
