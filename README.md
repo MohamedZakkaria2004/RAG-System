@@ -16,7 +16,9 @@ The diagram below shows the end-to-end architecture: documents are loaded, chunk
 
 The FastAPI service exposes interactive Swagger documentation for ingestion, querying, health checks, and evaluation.
 
-![Production RAG System API Docs](docs/assets/rag-system-api-docs.png)
+![Production RAG System API Endpoints](docs/assets/rag-system-api-endpoints.png)
+
+![Production RAG System API Schemas](docs/assets/rag-system-api-schemas.png)
 
 ## Features
 
